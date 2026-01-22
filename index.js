@@ -73,13 +73,39 @@ function parseValue(rawValue) {
 }
 
 function parseKey(line, indentLevel) {
-  const match = line.match(/^(\s*)(?<key>[^=]+)\s*=\s*(?<value>.*)?$/);
+  const trimmedLine = line.trimRight();
+  const match = trimmedLine.match(/^(\s*)(?<key>[^=]+)\s*=\s*(?<value>.*)?$/);
   if (!match) return null;
 
   const keyIndent = match[1].length;
   if (keyIndent % 2 !== 0) {
     throw new Error(`Indentation jump detected at line: ${line}`);
   }
+
+  const keyIndentLevel = keyIndent / 2;
+  if (keyIndentLevel > indentLevel + 1) {
+    throw new Error(`Indentation jump detected at line: ${line}`);
+  }
+
+  const key = match.groups.key.trim();
+  let value = match.groups.value;
+
+  if (value !== undefined) {
+    value = value.trim();
+    if (value.includes('#')) {
+      value = value.split('#')[0].trim();
+    }
+    if (value === '') {
+      value = null;
+    }
+  }
+
+  return {
+    key,
+    value,
+    indentLevel: keyIndentLevel
+  };
+}
 
   const keyIndentLevel = keyIndent / 2;
   if (keyIndentLevel > indentLevel + 1) {
@@ -116,7 +142,7 @@ function buildTree(lines) {
 
     const { key, value, indentLevel } = parsed;
 
-    while (stack.length > 0 && indentLevel <= stack[stack.length - 1].level) {
+    while (stack.length > 1 && indentLevel <= stack[stack.length - 2].level) {
       stack.pop();
     }
 
