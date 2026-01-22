@@ -73,12 +73,12 @@ function parseValue(rawValue) {
 }
 
 function parseKey(line, indentLevel) {
-  const match = line.match(/^(\s*)(?<key>[^\s=]+)\s*=\s*(?<value>.*)?$/);
+  const match = line.match(/^(\s*)(?<key>[^=]+)\s*=\s*(?<value>.*)?$/);
   if (!match) return null;
 
   const keyIndent = match[1].length;
   if (keyIndent % 2 !== 0) {
-    throw new Error(`Invalid indentation at line: ${line}`);
+    throw new Error(`Indentation jump detected at line: ${line}`);
   }
 
   const keyIndentLevel = keyIndent / 2;
@@ -86,10 +86,23 @@ function parseKey(line, indentLevel) {
     throw new Error(`Indentation jump detected at line: ${line}`);
   }
 
+  const key = match.groups.key.trim();
+  let value = match.groups.value;
+
+  if (value !== undefined) {
+    value = value.trim();
+    if (value.includes('#')) {
+      value = value.split('#')[0].trim();
+    }
+    if (value === '') {
+      value = null;
+    }
+  }
+
   return {
-    key: match.groups.key,
-    value: match.groups.value,
-    indentLevel: keyIndentLevel
+    key,
+    value,
+    indentLevel: keyIndent / 2
   };
 }
 
@@ -109,13 +122,7 @@ function buildTree(lines) {
 
     const parent = stack[stack.length - 1].obj;
 
-    if (value === undefined || value === '') {
-      const newObj = {};
-      parent[key] = newObj;
-      stack.push({ obj: newObj, level: indentLevel });
-    } else {
-      parent[key] = parseValue(value);
-    }
+    parent[key] = value;
   }
 
   return root;
@@ -135,6 +142,10 @@ export async function file(filePath) {
     data: config,
 
     async get(key, defaultValue) {
+      if (key in config) {
+        return config[key];
+      }
+
       const keys = key.split('.');
       let current = config;
 

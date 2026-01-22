@@ -127,3 +127,59 @@ test.skip('write after modification', async () => {
   const f2 = await file(await setupFixture('write2.kv'));
   assert.strictEqual(await f2.get('newKey'), 'newValue');
 });
+
+test('skip inline comments', async () => {
+  const f = await file(await setupFixture('comments.kv'));
+  assert.strictEqual(await f.get('engine'), 'pocket_tts');
+});
+
+test('reject invalid indentation', async () => {
+  await assert.rejects(
+    async () => await file(await setupFixture('bad-indent.kv')),
+    { message: 'Indentation' }
+  );
+});
+
+test('handle empty values', async () => {
+  const f = await file(await setupFixture('empty-value.kv'));
+  assert.strictEqual(await f.get('key1'), '');
+  assert.strictEqual(await f.get('key2'), 'value');
+});
+
+test('parse special keys', async () => {
+  const f = await file(await setupFixture('special-keys.kv'));
+  assert.strictEqual(await f.get('key_with_underscore'), 'value');
+  assert.strictEqual(await f.get('key-with-dash'), 'value');
+  assert.strictEqual(await f.get('key.with.dots'), 'value');
+  assert.strictEqual(await f.get('special@key'), 'value');
+});
+
+test('handle empty lines', async () => {
+  const f = await file(await setupFixture('empty-lines.kv'));
+  assert.strictEqual(await f.get('key'), 'value');
+  assert.strictEqual(await f.get('nested.key'), 'value');
+});
+
+test('trim trailing whitespace', async () => {
+  const f = await file(await setupFixture('trailing-space.kv'));
+  assert.strictEqual(await f.get('key'), 'value with spaces');
+});
+
+test('parse long values', async () => {
+  const f = await file(await setupFixture('long-value.kv'));
+  const value = await f.get('very_long_value_name');
+  assert.ok(typeof value === 'string' && value.startsWith('a lot of text'));
+});
+
+test('parse equals in value', async () => {
+  const f = await file(await setupFixture('equals-in-value.kv'));
+  assert.strictEqual(await f.get('key_with_equals_in_value'), 'value=with=equals');
+});
+
+test('parse unicode values', async () => {
+  const f = await file(await setupFixture('unicode.kv'));
+  assert.strictEqual(await f.get('emoji'), '😀');
+  assert.strictEqual(await f.get('accented'), 'café');
+  assert.strictEqual(await f.get('chinese'), '你好');
+  assert.strictEqual(await f.get('japanese'), 'こんにちは');
+});
