@@ -1,0 +1,19 @@
+{
+  "name": "kv-conf",
+  "version": "0.1.0",
+  "description": "Simple key-value configuration file format with nesting and type conversion",
+  "main": "index.js",
+  "type": "module",
+  "exports": {
+    ".": "./index.js",
+    "./test": "./test.js"
+  },
+  "scripts": {
+    "test": "node --test test.js"
+  },
+  "keywords": ["config", "kv", "configuration"],
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
