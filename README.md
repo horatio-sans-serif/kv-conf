@@ -14,10 +14,14 @@ UTF-8, line-oriented, `#` for comments, `key = value` pairs.
 engine = pocket_tts
 voice = azelma
 
-# Nesting uses 2-space indentation
+# Nested objects use 2-space indentation with no value after =
 output =
   path = ~/.local/share/speeker
   format = mp3
+
+# Empty strings (explicit empty value after =)
+empty_string = ""
+another_empty = ""
 
 # Lists are CSV with proper CSV quoting
 likes = football,large language models,"ice cream, cones"
@@ -28,6 +32,15 @@ enabled = true
 pi = 3.14
 hex = 0xFF
 ```
+
+### Value Rules
+
+| Syntax | Meaning | Result |
+|--------|---------|--------|
+| `key = value` | Normal value | `key: "value"` |
+| `key =` | Empty string | `key: ""` |
+| `key = ""` | Explicit empty string | `key: ""` |
+| `key =` followed by indented lines | Nested object | `key: { nested: ... }` |
 
 ### Type Conversion
 

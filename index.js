@@ -4,11 +4,14 @@ import path from 'path';
 const INDENT = '  ';
 
 function parseValue(rawValue) {
-  if (rawValue === undefined || rawValue === null || rawValue === '') {
-    return null;
+  if (rawValue === undefined || rawValue === null) {
+    return rawValue;
   }
 
   const trimmed = rawValue.trim();
+
+  if (trimmed === '""') return '';
+  if (trimmed === '') return '';
 
   if (trimmed === 'true') return true;
   if (trimmed === 'false') return false;
@@ -74,7 +77,7 @@ function parseValue(rawValue) {
 
 function parseKey(line, indentLevel) {
   const trimmedLine = line.trimRight();
-  const match = trimmedLine.match(/^(\s*)(?<key>[^=]+)\s*=\s*(?<value>.*)?$/);
+  const match = trimmedLine.match(/^(\s*)(?<key>[^=]+?)\s*=\s*(?<value>.*)?$/);
   if (!match) return null;
 
   const keyIndent = match[1].length;
@@ -95,9 +98,6 @@ function parseKey(line, indentLevel) {
     if (value.includes('#')) {
       value = value.split('#')[0].trim();
     }
-    if (value === '') {
-      value = null;
-    }
   }
 
   return {
@@ -107,48 +107,37 @@ function parseKey(line, indentLevel) {
   };
 }
 
-  const keyIndentLevel = keyIndent / 2;
-  if (keyIndentLevel > indentLevel + 1) {
-    throw new Error(`Indentation jump detected at line: ${line}`);
-  }
-
-  const key = match.groups.key.trim();
-  let value = match.groups.value;
-
-  if (value !== undefined) {
-    value = value.trim();
-    if (value.includes('#')) {
-      value = value.split('#')[0].trim();
-    }
-    if (value === '') {
-      value = null;
-    }
-  }
-
-  return {
-    key,
-    value,
-    indentLevel: keyIndent / 2
-  };
-}
-
 function buildTree(lines) {
   const root = {};
   const stack = [{ obj: root, level: -1 }];
 
-  for (const line of lines) {
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
     const parsed = parseKey(line, stack[stack.length - 1].level);
     if (!parsed) continue;
 
     const { key, value, indentLevel } = parsed;
 
-    while (stack.length > 1 && indentLevel <= stack[stack.length - 2].level) {
+    while (stack.length > 1 && indentLevel <= stack[stack.length - 1].level) {
       stack.pop();
     }
 
     const parent = stack[stack.length - 1].obj;
 
-    parent[key] = value;
+    if (value === undefined) {
+      const nextLine = lines[i + 1];
+      const nextParsed = nextLine ? parseKey(nextLine, indentLevel) : null;
+
+      if (nextParsed && nextParsed.indentLevel > indentLevel) {
+        const newObj = {};
+        parent[key] = newObj;
+        stack.push({ obj: newObj, level: indentLevel });
+      } else {
+        parent[key] = '';
+      }
+    } else {
+      parent[key] = parseValue(value);
+    }
   }
 
   return root;

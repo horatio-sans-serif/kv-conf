@@ -136,7 +136,7 @@ test('skip inline comments', async () => {
 test('reject invalid indentation', async () => {
   await assert.rejects(
     async () => await file(await setupFixture('bad-indent.kv')),
-    { message: 'Indentation' }
+    { message: /Indentation jump/ }
   );
 });
 
@@ -182,4 +182,12 @@ test('parse unicode values', async () => {
   assert.strictEqual(await f.get('accented'), 'café');
   assert.strictEqual(await f.get('chinese'), '你好');
   assert.strictEqual(await f.get('japanese'), 'こんにちは');
+});
+
+test('distinguish nested object vs empty string', async () => {
+  const f = await file(await setupFixture('nested-vs-empty.kv'));
+  assert.strictEqual(typeof await f.get('nested_obj'), 'object');
+  assert.strictEqual(await f.get('nested_obj.key1'), 'value1');
+  assert.strictEqual(await f.get('empty_string'), '');
+  assert.strictEqual(await f.get('another_value'), 'test');
 });
